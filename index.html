@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open the app</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, sans-serif;
+        line-height: 1.4;
+      }
+      main {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 28px 18px;
+      }
+      .card {
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 20px;
+      }
+      p {
+        margin: 10px 0;
+        opacity: 0.9;
+      }
+      a {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        text-decoration: none;
+      }
+      small {
+        opacity: 0.75;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="card">
+        <h1>Redirecting…</h1>
+        <p id="status">Detecting your device.</p>
+
+        <div id="links" style="display: none">
+          <p>If you aren’t redirected automatically, use one of these links:</p>
+          <p>
+            <a id="iosLink" href="#" rel="nofollow noopener"
+              >Open in App Store</a
+            >
+            <a id="androidLink" href="#" rel="nofollow noopener"
+              >Open in Google Play</a
+            >
+          </p>
+          <p><small>Desktop users: pick a store link above.</small></p>
+        </div>
+
+        <p><small id="debug" style="display: none"></small></p>
+      </div>
+    </main>
+
+    <script>
+      // TODO: Replace these with your real store URLs.
+      // iOS example:  https://apps.apple.com/app/id1234567890
+      // Android example: https://play.google.com/store/apps/details?id=com.example.app
+      const IOS_APP_STORE_URL = "https://apps.apple.com/";
+      const ANDROID_PLAY_STORE_URL = "https://play.google.com/store";
+
+      // Optional: a general fallback (website/landing page) for unknown platforms.
+      // Leave as "" to just show links without redirecting.
+      const FALLBACK_URL = "";
+
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function isAndroid() {
+        // Prefer UA-CH when present.
+        const uaData = navigator.userAgentData;
+        if (uaData && typeof uaData.platform === "string") {
+          return uaData.platform.toLowerCase().includes("android");
+        }
+        return /Android/i.test(navigator.userAgent);
+      }
+
+      function isIOS() {
+        const ua = navigator.userAgent;
+        const platform = navigator.platform || "";
+        // Classic iOS detection
+        if (/iPad|iPhone|iPod/.test(ua)) return true;
+
+        // iPadOS 13+ reports as Mac, but has touch points
+        const isMacLike = platform === "MacIntel" || /Macintosh/.test(ua);
+        if (
+          isMacLike &&
+          typeof navigator.maxTouchPoints === "number" &&
+          navigator.maxTouchPoints > 1
+        ) {
+          return true;
+        }
+        return false;
+      }
+
+      function showLinks(iosUrl, androidUrl) {
+        const links = document.getElementById("links");
+        const iosLink = document.getElementById("iosLink");
+        const androidLink = document.getElementById("androidLink");
+
+        iosLink.href = iosUrl;
+        androidLink.href = androidUrl;
+        links.style.display = "block";
+      }
+
+      function setStatus(text) {
+        document.getElementById("status").textContent = text;
+      }
+
+      function maybeDebug(text) {
+        if (getQueryParam("debug") !== "1") return;
+        const el = document.getElementById("debug");
+        el.style.display = "block";
+        el.textContent = text;
+      }
+
+      (function main() {
+        const forced = (getQueryParam("platform") || "").toLowerCase();
+        const noRedirect = getQueryParam("redirect") === "0";
+
+        const iosUrl = IOS_APP_STORE_URL;
+        const androidUrl = ANDROID_PLAY_STORE_URL;
+        showLinks(iosUrl, androidUrl);
+
+        const detectedAndroid =
+          forced === "android" ? true : forced === "ios" ? false : isAndroid();
+        const detectedIOS =
+          forced === "ios" ? true : forced === "android" ? false : isIOS();
+
+        maybeDebug(
+          "forced=" +
+            forced +
+            " | ua=" +
+            navigator.userAgent +
+            " | platform=" +
+            (navigator.platform || "") +
+            " | maxTouchPoints=" +
+            (navigator.maxTouchPoints || 0)
+        );
+
+        if (noRedirect) {
+          setStatus(
+            "Auto-redirect is disabled (redirect=0). Choose a link below."
+          );
+          return;
+        }
+
+        if (detectedIOS) {
+          setStatus("Taking you to the App Store…");
+          window.location.replace(iosUrl);
+          return;
+        }
+
+        if (detectedAndroid) {
+          setStatus("Taking you to Google Play…");
+          window.location.replace(androidUrl);
+          return;
+        }
+
+        if (FALLBACK_URL) {
+          setStatus("Taking you to the website…");
+          window.location.replace(FALLBACK_URL);
+          return;
+        }
+
+        setStatus("We couldn’t detect your device. Choose a store link below.");
+      })();
+    </script>
+  </body>
+</html>
